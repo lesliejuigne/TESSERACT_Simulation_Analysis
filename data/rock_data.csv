@@ -1,0 +1,5 @@
+Material,Particule,Isotope,Surface,Count,Flux,Sigma,
+Rock,Gammas,K40,3.2e5,1e9,0.0722,3.61e-3
+Rock,Gammas,Th232,3.2e5,1e9,0.661,3.31e-2
+Rock,Gammas,U238,3.2e5,1e9,1.166,5.83e-2
+Rock,Neutrons,Tot,3.2e5,1e9,1.1e-6,0.4e-6
