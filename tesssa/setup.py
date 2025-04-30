@@ -6,6 +6,6 @@ setup(
     packages=find_packages(),
     author='Leslie Juigne',
     author_email="ljuigne@physik.uzh.ch",
-    description="Code to analyse GEANT4 simulations of TESSERACT",
+    description="Code to analyse simulations of TESSERACT",
 
 )
