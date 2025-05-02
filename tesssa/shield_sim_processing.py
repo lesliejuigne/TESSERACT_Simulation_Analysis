@@ -8,6 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 import warnings
 from tesssa.utils import get_cached_data
+import get_h5_files as ghd
 
 warnings.simplefilter("ignore")
 
@@ -16,12 +17,10 @@ rock      = get_cached_data("rock_data.csv")
 
 class g4_sim_proc:
 
-    def __init__(self, geo, compoment, folder, plots= True):
+    def __init__(self, geo, compoment, folder_path, plots= True):
         self.compoment = compoment
-        self.geometry = geo 
-        self.folder = folder
-        
-        self.folder_path = self.folder + "/processed"
+        self.geometry = geo         
+        self.folder_path = folder_path
         print(f"Processing files in {self.folder_path}")
         #To choose between the rock or the shielding 
          # either "rock" or "internals"
@@ -45,7 +44,8 @@ class g4_sim_proc:
         self.energy = {}
         
         # ======== functions calling ========
-        self.load_data() 
+        #self.load_raw_data() 
+        self.load_h5py_data()
         self.normalize_data()
         self.get_totals()
         if plots == True : 
@@ -54,7 +54,6 @@ class g4_sim_proc:
     
     def get_log_bins(self):
         self.bins = np.geomspace(self.xLow, self.xHigh, self.Bins)  
-        
         
     def get_root_tree(self, file_path):
         try:
@@ -78,24 +77,7 @@ class g4_sim_proc:
         centers = (edges[:-1] + edges[1:]) / 2.0
         return centers, counts, edges
     
-    def load_data(self):
-        if self.compoment == "internals":
-            source_df = materials
-            group_col = "Material"
-            file_prefix = ""
-            self.shielding = source_df["Material"].unique().tolist()
-            layers = self.shielding
-
-        elif self.compoment in ["rock", "concrete"]:
-            source_df = rock
-            group_col = "Particule"
-            mat_filter = "Rock" if self.compoment == "rock" else "Concrete"
-            source_df = source_df[source_df["Material"] == mat_filter]
-            self.particule = source_df["Particule"].unique().tolist()
-            layers = self.particule
-            file_prefix = mat_filter + "_"
-        else:
-            raise ValueError(f"Unknown component: {self.compoment}")
+    def load_raw_data(self):
 
         def get_layers_and_isotopes(component):
             if component == "internals":
@@ -137,8 +119,21 @@ class g4_sim_proc:
 
         print("Data loading complete.", self.data_counts)
 
-
+    def load_h5py_data(self):
+        self.h5_file = ghd.load_h5_file(self.folder_path)
+        for layer in self.h5_file.keys():
+            self.data[layer] = {}
+            self.data_counts[layer] = {}
+            for iso in self.h5_file[layer].keys():
+                self.data[layer][iso] = [self.h5_file[layer][iso]['edep']]
+                self.data_counts[layer][iso] = len(self.h5_file[layer][iso]['edep'])
+                
+        
     def normalize_data(self):
+        
+        self.shielding = materials["Material"].unique().tolist()
+        self.particle = rock["Particule"].unique().tolist()
+        
         def compute_normalized_counts(X, Y, norm, norm_err):
             return np.multiply(Y, norm), np.multiply(Y, norm_err), X
 
@@ -156,7 +151,7 @@ class g4_sim_proc:
             print("Unknown component:", self.compoment)
             return
 
-        layers = self.shielding if self.compoment == "internals" else self.particule
+        layers = self.shielding if self.compoment == "internals" else self.particle
 
         for layer in layers:
             self.counts[layer], self.counts_err[layer], self.energy[layer] = {}, {}, {}
@@ -166,11 +161,11 @@ class g4_sim_proc:
                 else rock[rock["Particule"] == layer]["Isotope"].tolist()
             )
             for iso in isotopes:
-                if self.data_counts[layer][iso] == 0:
-                    print(f"Warning: No data for {layer} {iso}")
-                    continue
-
                 try:
+                    #len(self.data_counts[layer][iso])
+                    #print(f"Warning: No data for {layer} {iso}")
+                    
+
                     X, Y, self.edges = self.hist_it(self.data[layer][iso])
                     p1, p2, p3, p4 = get_parameters(self.compoment, layer, iso)
 
@@ -181,6 +176,7 @@ class g4_sim_proc:
                     )
                     norm, norm_err = normalization_factor * p3, normalization_factor * p4
                     self.counts[layer][iso], self.counts_err[layer][iso], self.energy[layer][iso] = compute_normalized_counts(X, Y, norm, norm_err)
+                
                 except Exception as e:
                     print(f"No data for {layer} {iso}:", e)
                     continue
@@ -210,26 +206,31 @@ class g4_sim_proc:
                 ax.scatter(energy, counts_err, color=color, marker='.')
                 ax.errorbar(energy, counts_err, yerr=np.sqrt(counts_err), fmt='.', color=color, capsize=2)
 
-        energy_key = 'Cu' if self.compoment == 'internals' else 'Gammas'
-        energy = self.energy[energy_key]['K40']
+        try:
+            energy_key = 'Cu' if self.compoment == 'internals' else 'Gammas'
 
-        for k in self.counts:
-            if k == 'total':
-                continue
-            fig, ax = plt.subplots(figsize=(12, 8))
-            cmap = cm.get_cmap('viridis', len(self.counts[k]))
+            energy = self.energy[energy_key]['K40']
 
-            for i, j in enumerate(self.counts[k]):
-                color = cmap(i)
-                plot_individual_spectrum(energy, self.counts[k][j], self.counts_err[k][j], j, color, ax)
+            for k in self.counts:
+                if k == 'total':
+                    continue
+                fig, ax = plt.subplots(figsize=(12, 8))
+                cmap = cm.get_cmap('viridis', len(self.counts[k]))
 
-            ax.set_yscale('log')
-            ax.set_xlabel("Energy [keV]", fontsize=20)
-            ax.set_ylabel("Counts / (keV.kg.day)", fontsize=20)
-            ax.set_title(f"{self.geometry} {self.compoment} {k}", fontsize=20)
-            ax.grid()
-            ax.legend(loc='upper right', fontsize=20)
-            plt.show()
+                for i, j in enumerate(self.counts[k]):
+                    color = cmap(i)
+                    plot_individual_spectrum(energy, self.counts[k][j], self.counts_err[k][j], j, color, ax)
+
+                ax.set_yscale('log')
+                ax.set_xlabel("Energy [keV]", fontsize=20)
+                ax.set_ylabel("Counts / (keV.kg.day)", fontsize=20)
+                ax.set_title(f"{self.geometry} {self.compoment} {k}", fontsize=20)
+                ax.grid()
+                ax.legend(loc='upper right', fontsize=20)
+                plt.show()
+        except Exception as e:
+            print(f"Error in plotting spectrum: {e}")
+            return
 
 
     def get_spectrum_totals(self):
@@ -238,28 +239,31 @@ class g4_sim_proc:
             ax.fill_between(energy, counts + counts_err, counts - counts_err, step='mid', alpha=0.2, color=color)
             ax.scatter(energy, counts, color=color, marker='.')
             ax.errorbar(energy, counts, yerr=np.sqrt(counts), fmt='.', capsize=2, color=color)
+        try:
+            energy_key = 'Cu' if self.compoment == 'internals' else 'Gammas'
+            energy = self.energy[energy_key]['K40']
+            fig, ax = plt.subplots(figsize=(12, 8))
 
-        energy_key = 'Cu' if self.compoment == 'internals' else 'Gammas'
-        energy = self.energy[energy_key]['K40']
-        fig, ax = plt.subplots(figsize=(12, 8))
+            plot_total(energy, self.counts['total'], self.counts_err['total'], 'total', 'k', ax)
 
-        plot_total(energy, self.counts['total'], self.counts_err['total'], 'total', 'k', ax)
+            colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+            for h, k in enumerate(self.counts):
+                if k == 'total':
+                    continue
+                for j in self.counts[k]:
+                    if j == 'total':
+                        color = colors[h % len(colors)]
+                        plot_total(energy, self.counts[k][j], self.counts_err[k][j], k, color, ax)
 
-        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
-        for h, k in enumerate(self.counts):
-            if k == 'total':
-                continue
-            for j in self.counts[k]:
-                if j == 'total':
-                    color = colors[h % len(colors)]
-                    plot_total(energy, self.counts[k][j], self.counts_err[k][j], k, color, ax)
-
-        ax.set_yscale('log')
-        ax.set_xlabel("Energy [keV]", fontsize=20)
-        ax.set_ylabel("Counts / (keV.kg.day)", fontsize=20)
-        ax.set_title(f"{self.geometry} {self.compoment}", fontsize=20)
-        ax.grid()
-        ax.legend(loc='upper right', fontsize=20)
-        plt.show()
+            ax.set_yscale('log')
+            ax.set_xlabel("Energy [keV]", fontsize=20)
+            ax.set_ylabel("Counts / (keV.kg.day)", fontsize=20)
+            ax.set_title(f"{self.geometry} {self.compoment}", fontsize=20)
+            ax.grid()
+            ax.legend(loc='upper right', fontsize=20)
+            plt.show()
+        except Exception as e:
+            print(f"Error in plotting spectrum totals: {e}")
+            return
 
               
