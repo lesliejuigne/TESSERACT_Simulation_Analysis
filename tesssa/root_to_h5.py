@@ -14,12 +14,16 @@ h5_output = files('sim_data_example')
 
 class RootToH5PY:
     
-    def __init__(self , output_file, shield):
+    def __init__(self , output_file, shield, input_file = None):
         self.output_file = output_file
         self.shield = shield
         self.root_keys = ["file", "ID", "eventID", "clusterIndex", "timeStamp", "edep"]
         self.__message__(True)
-        self.get_output()
+        if input_file is None:
+            self.get_output()
+        else: 
+            self.iin = input_file
+            self.out = self.output_file
         self.get_files_h5()
                 
     def __message__(self, top):
