@@ -1,4 +1,5 @@
 import uproot as ROOT
+from importlib_resources import files
 import os
 import pandas as pd
 import h5py
@@ -6,24 +7,32 @@ import glob
 from tqdm import tqdm
 import numpy as np
 import warnings
+import tesssa.utils
 warnings.simplefilter("ignore")
+
+h5_output = files('sim_data_example')
 
 class RootToH5PY:
     
-    def __init__(self , folder_path, output_file, shield):
-        self.folder_path = folder_path
+    def __init__(self , output_file, shield):
         self.output_file = output_file
         self.shield = shield
         self.root_keys = ["file", "ID", "eventID", "clusterIndex", "timeStamp", "edep"]
         self.__message__(True)
+        self.get_output()
         self.get_files_h5()
-    
+                
     def __message__(self, top):
         if top == True:
             print("Processing in progress! Be patient... :)")
         if top == False:
             print("Processing completed! :)")
-        
+    
+    def get_output(self):
+        self.folder_path = h5_output.joinpath(self.shield)   
+        self.iin = os.path.join(self.folder_path,"raw")
+        self.out = os.path.join(self.folder_path, self.output_file)
+
     def get_root_data(self, file_path):
         try:
             self.root_file = ROOT.open(file_path)
@@ -40,11 +49,10 @@ class RootToH5PY:
             key: np.array(self.tree.arrays(Params[i])[Params[i]]).tolist()
             for i, key in enumerate(self.root_keys)
         }
-        
         return data
    
     def get_files_h5(self):
-        file_list = glob.glob(os.path.join(self.folder_path, "*_proc.root"))
+        file_list = glob.glob(os.path.join(self.iin, "*_proc.root"))
         self.grouped_data = {}
 
         try:    
@@ -72,7 +80,7 @@ class RootToH5PY:
                 
             
             # Open or create an HDF5 file
-            with h5py.File(self.output_file, "w") as f:
+            with h5py.File(self.out, "w") as f:
                 # Loop through the grouped data to write to the file
                 for layer, isotopes in self.grouped_data.items():
                     # Create a group for each layer

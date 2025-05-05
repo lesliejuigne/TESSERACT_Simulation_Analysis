@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 import warnings
 from tesssa.utils import get_cached_data
-import get_h5_files as ghd
+from tesssa import get_h5_files as ghd
 
 warnings.simplefilter("ignore")
 
@@ -51,6 +51,7 @@ class g4_sim_proc:
         if plots == True : 
             self.get_spectrum()
             self.get_spectrum_totals()
+        self.print_simulation_summary()
     
     def get_log_bins(self):
         self.bins = np.geomspace(self.xLow, self.xHigh, self.Bins)  
@@ -265,5 +266,21 @@ class g4_sim_proc:
         except Exception as e:
             print(f"Error in plotting spectrum totals: {e}")
             return
+    
+    def print_simulation_summary(self):
+        print("\nSimulation Summary")
+        print("===========================================")
+        print(f"Shielding Type: {self.compoment.capitalize()} and Geometry: {self.geometry.capitalize()}\n")
+        print("Total counts per Layer of Shielding:")
+        print("____________________________________\n")
+        for layer in self.counts:
+            if layer == 'total':
+                continue
+            print(f"{layer}: R = {np.sum(self.counts[layer]['total']):.2e} ± {np.sum(self.counts_err[layer]['total']):.2e} counts/keV.day.kg")
+        print("\nTotal Counts:")
+        print("_______________\n")
+        print(f"R = {np.sum(self.counts['total']):.2e} ± {np.sum(self.counts_err['total']):.2e} counts/keV.day.kg")  
 
+        
+        
               
