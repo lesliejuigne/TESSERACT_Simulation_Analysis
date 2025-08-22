@@ -25,6 +25,7 @@ class RootToH5PY:
             self.iin = input_file
             self.out = self.output_file
         self.get_files_h5()
+        self.write_h5_file()
                 
     def __message__(self, top):
         if top == True:
@@ -45,14 +46,13 @@ class RootToH5PY:
                 print(f"Warning: No tree found in {file_path}")
                 return [] 
             
+            Params = self.tree.keys()
+            data = {
+                key: np.array(self.tree.arrays(Params[i])[Params[i]]).tolist()
+                for i, key in enumerate(self.root_keys)
+            }
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
-            
-        Params = self.tree.keys()
-        data = {
-            key: np.array(self.tree.arrays(Params[i])[Params[i]]).tolist()
-            for i, key in enumerate(self.root_keys)
-        }
         return data
    
     def get_files_h5(self):
@@ -80,26 +80,23 @@ class RootToH5PY:
                     if key not in self.grouped_data[layer][isotope]:
                         self.grouped_data[layer][isotope][key] = []
                     
-                self.grouped_data[layer][isotope][key].extend(value)
-                
+                    self.grouped_data[layer][isotope][key].extend(value)
             
-            # Open or create an HDF5 file
-            with h5py.File(self.out, "w") as f:
-                # Loop through the grouped data to write to the file
-                for layer, isotopes in self.grouped_data.items():
-                    # Create a group for each layer
-                    layer_group = f.create_group(layer)
-                    
-                    for isotope, data in isotopes.items():
-                        # Create a group for each isotope under the corresponding layer
-                        isotope_group = layer_group.create_group(isotope)
-                        
-                        # Write the data (lists) as datasets within each isotope group
-                        for key, values in data.items():
-                            # Convert lists to numpy arrays for better storage
-                            isotope_group.create_dataset(key, data=values)
         except Exception as e:
             print(f"Error processing files: {e}")
+        
+    def write_h5_file(self):
+        # Open or create an HDF5 file
+        with h5py.File(self.out, "w") as f:
+            for layer, isotopes in self.grouped_data.items():
+                layer_group = f.create_group(layer)
+                    
+                for isotope, data in isotopes.items():
+                    isotope_group = layer_group.create_group(isotope)
+                        
+                    for key, values in data.items():
+                        isotope_group.create_dataset(key, data=values)
+        
 
 
 
