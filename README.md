@@ -105,8 +105,9 @@ TESSSA/
 ├── filtering/ # Codes to filter raw ROOT files
 │	├── cpp/
 │		├── VD_single_filtering.cc # Keeps only events in the detector zone for 1 file
-│		└── VD_group_filtering.cc # Keeps only events in the detector zone and merge all the files
-│ └── bash_script_templates/
+│		├── VD_group_filtering.cc # Keeps only events in the detector zone and merge all the files
+│     └── ...
+└── bash_script_templates/
 │		├── single_filtering_slurm.sh
 │		└── group_filtering_slurm.sh
 │
