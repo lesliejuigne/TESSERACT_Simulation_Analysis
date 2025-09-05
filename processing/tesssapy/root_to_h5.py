@@ -7,7 +7,7 @@ import glob
 from tqdm import tqdm
 import numpy as np
 import warnings
-import tesssa.utils
+import tesssapy.utils
 warnings.simplefilter("ignore")
 
 h5_output = files('sim_data_example')

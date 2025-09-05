@@ -7,8 +7,8 @@ import glob
 import pandas as pd
 from tqdm import tqdm
 import warnings
-from tesssa.utils import get_cached_data
-from tesssa import get_h5_files as ghd
+from tesssapy.utils import get_cached_data
+from tesssapy import get_h5_files as ghd
 
 warnings.simplefilter("ignore")
 
