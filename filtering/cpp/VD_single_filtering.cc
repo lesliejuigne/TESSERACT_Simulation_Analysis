@@ -1,11 +1,12 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TString.h>
+#include <TSystem.h>
+#include <TMacro.h>
 #include <iostream>
-#include <TSystem.h>  // for gSystem->mkdir
 
 void VD_single_filtering(const TString& inputFileName,
-                  const TString& outFolder = "filtered") // output folder
+                         const TString& outFolder = "filtered") // output folder
 {
     gSystem->mkdir(outFolder, kTRUE);
 
@@ -17,6 +18,7 @@ void VD_single_filtering(const TString& inputFileName,
         return;
     }
 
+    // --- Get events tree ---
     TTree *tree = (TTree*)inputFile->Get("events");
     if (!tree) {
         std::cerr << "No 'events' tree in file: " << inputFileName << std::endl;
@@ -24,28 +26,40 @@ void VD_single_filtering(const TString& inputFileName,
         return;
     }
 
-    
-
-    // --- Prépare le nom du fichier de sortie ---
-    TString shortName = gSystem->BaseName(inputFileName); // ex: myfile.root
-    shortName.ReplaceAll(".root", "");                     // retire .root
+    // --- Prepare output name ---
+    TString shortName = gSystem->BaseName(inputFileName); // e.g. myfile.root
+    shortName.ReplaceAll(".root", "");                    // remove .root
     TString outputFileName = Form("%s/%s_filtered.root", outFolder.Data(), shortName.Data());
 
-    // --- Sauvegarde ---
+    // --- Create output file ---
     TFile *outputFile = new TFile(outputFileName, "RECREATE");
     outputFile->cd();
 
-    // --- Applique le filtre ---
+    // --- Filter events tree ---
     TTree *filtered = tree->CopyTree("volume == \"virtualDetector\"");
     if (filtered) {
         filtered->SetName("events");
-        std::cout << "Writing " << filtered->GetEntries() << " entries to " << outputFileName << std::endl;
+        std::cout << "Writing " << filtered->GetEntries()
+                  << " entries to " << outputFileName << std::endl;
         filtered->Write();
         delete filtered;
     } else {
         std::cout << "No events found in " << inputFileName << std::endl;
     }
 
+    // --- Copy TMacro objects if they exist ---
+    const char* macrosToCopy[] = {"runMacro", "geometryTable"};
+    for (auto name : macrosToCopy) {
+        TMacro* macro = dynamic_cast<TMacro*>(inputFile->Get(name));
+        if (macro) {
+            std::cout << "Copying TMacro: " << name << std::endl;
+            macro->Write(name);
+        } else {
+            std::cout << "TMacro " << name << " not found in file." << std::endl;
+        }
+    }
+
+    // --- Close files ---
     outputFile->Close();
     delete outputFile;
 
