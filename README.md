@@ -112,7 +112,7 @@ TESSSA/
 │		└── group_filtering_slurm.sh
 │
 ├── processing/ # Normalization & post-filtering analysis
-│ ├── py/ 
+│ ├── tesssapy/ 
 │		├──sim_processing.py # Converts filtered data into normalized DataFrames
 │		└── ...
 │	└── example_notebook.ipynb # Demo notebook for processing & plotting
