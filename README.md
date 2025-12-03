@@ -13,13 +13,6 @@ Before running TESSSA, make sure the following software and modules are installe
 - Python 3.9+  
 - Core Python packages (install with `pip install -r requirements.txt`):
 
-```txt
-numpy>=1.21
-pandas>=1.3
-matplotlib>=3.4
-uproot>=4.1
-tqdm>=4.62
-
 ### 2. ROOT
 ROOT version 6.26 or higher recommended
 ROOT must be installed and accessible in your shell $PATH
