@@ -144,8 +144,11 @@ Full formulas, tables, and references are in [`docs/METHODOLOGY.md`](docs/METHOD
 
 ## Command Example
 ```bash
-# 1. Filter raw GEANT4 data
+# 1. Run Simulations
+python3 launch_jobs.py
+
+# 2. Filter raw GEANT4 data
 root -l -b -q "VD_single_filtering.cc("input_file.root","output_folder/")"
 
-# 2. Process and normalize filtered data
+# 3. Process and normalize filtered data
 python -c "import TESSSA.sim_processing as ssp; s = ssp.g4_sim_proc('layer', 'path/to/data', plots=True)"
