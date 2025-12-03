@@ -34,7 +34,7 @@ root --version
 Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/TESSSA.git
+git clone https://github.com/lesliejuigne/TESSSA.git
 cd TESSSA
 
 There are two main installation modes:
