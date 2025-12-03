@@ -5,3 +5,4 @@ uproot>=4.1
 scipy>=1.7
 h5py>=3.6
 tqdm>=4.62
+importlib-ressources>=6.5.2
