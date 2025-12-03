@@ -89,6 +89,7 @@ pip install -r requirements.txt
 ---
 
 ## 📂 Repository Structure
+```
 TESSSA/
 │
 ├── filtering/ # Codes to filter raw ROOT files
@@ -116,7 +117,7 @@ TESSSA/
 │	└── TESSSA_v1_presentation # Presentation of the v1 | How it works and initial results 
 │
 └── README.md # Project overview (this file)
-
+```
 ---
 
 ## Normalization Methodology
