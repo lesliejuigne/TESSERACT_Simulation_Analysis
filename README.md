@@ -56,7 +56,7 @@ pip install -r requirements.txt
 ```
 ---
 
-## 📌 Workflow Overview
+## Workflow Overview
 
 1. **Simulation (GEANT4)**  
    - Run detector and shielding simulations with GEANT4 on the container.  
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 ```text
 TESSSA/
 │
