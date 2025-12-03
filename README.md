@@ -11,7 +11,7 @@ Before running TESSSA, make sure the following software and modules are installe
 
 ### 1. Python dependencies
 - Python 3.9+  
-- Core Python packages (install with `pip install -r requirements.txt`):
+- Core Python packages (install with `pip install -r requirements.txt`)
 
 ### 2. ROOT
 ROOT version 6.26 or higher recommended
@@ -21,6 +21,7 @@ Check version with:
 
 ```bash
 root --version
+```
 
 ## Installation
 
@@ -29,7 +30,7 @@ Clone the repository:
 ```bash
 git clone https://github.com/lesliejuigne/TESSSA.git
 cd TESSSA
-
+```
 There are two main installation modes:
 
 Development mode (recommended for contributors)
@@ -37,12 +38,14 @@ Use this if you plan to modify the code:
 
 ```bash
 pip install -e .
+```
 
 User mode (recommended for end users)
 Use this if you only want to run TESSSA without changing the source code:
 
 ```bash
 pip install .
+```
 
 ## Dependencies
 
@@ -50,7 +53,7 @@ Install all dependencies with:
 
 ```bash
 pip install -r requirements.txt
-
+```
 ---
 
 ## 📌 Workflow Overview
