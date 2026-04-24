@@ -1,12 +1,15 @@
 # List of materials and isotopes
-internals = {
-    "Cu":  ["K40", "Th232", "U238"],
-    "PCu": ["K40", "Th232", "U238"],
-    "Pb":  ["K40", "Pb210", "Th232", "U238"],
-    "PE":  ["Co60", "Cs137", "K40", "Th232", "U238"],
-    "SSi": ["Ac228","Bi214","Co60","Cs137","K40","Pb210","Pb212","Pb214","Th232","Tl208","U235","U238"],
-    "Ti":  ["Co60","Cs137","K40","Ra226","Sc46","Th228","Th232","U235","U238"],
-}
+#internals = {
+    #"Cu"     :  ["Co57","Co58","Mn54","Co60", "Cs137", "K40", "Th232", "U238_early", "U238_late"],
+    #"PCu"    : ["Co60", "Cs137", "K40", "Th232", "U238_early", "U238_late"],
+    #"Pb"     : ["Pb210", "Ra226", "Th228", "Th232", "U238_early", "U238_late"],
+    #"PE"     : ["Co60", "K40", "Pb210", "Ra226", "Th228", "Th232", "U238_early", "U238_late"],
+    #"PEext"  : ["Co60", "K40", "Pb210", "Ra226", "Th228", "Th232", "U238_early", "U238_late"],
+    #"RomanPb":["K40", "Pb210", "Ra226", "Th228"],
+    #"MuMetal": ["Co58", "Co60", "Cs137", "K40", "Th232", "U238_early", "U238_late"],
+    #"Ti"     : ["K40", "Th232", "U238_early", "U238_late"],
+    #"SSi"    : ["Ac228", "Bi214", "Co60", "Cs137", "K40", "Pb210", "Pb212", "Pb214", "Tl208"],
+#}
 
 rock_gammas = ["K40", "Th232", "U238"]
 concrete_gammas = ["K40", "Th232", "U238"]
@@ -15,4 +18,5 @@ concrete_gammas = ["K40", "Th232", "U238"]
 rock_neutrons = True
 
 # Bias options
-bias_options = ["off"]
+bias_options = ["on"]
+ 

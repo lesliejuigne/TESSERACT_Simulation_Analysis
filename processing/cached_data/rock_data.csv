@@ -1,4 +1,4 @@
-Material,Particule,Isotope,Surface,Flux,Sigma,
+Material,Particule,Isotope,Surface,Flux,Sigma
 Rock,Gammas,K40,3.2e5,0.035,3.61e-4
 Rock,Gammas,Th232,3.2e5,0.30,3.31e-3
 Rock,Gammas,U238,3.2e5,0.28,5.83e-3

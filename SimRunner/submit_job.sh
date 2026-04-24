@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --array=0-25
+#SBATCH --array=0-499
 #SBATCH --time=2-23:30:00
 #SBATCH --partition long
 #SBATCH --ntasks=1
@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=3GB
 #SBATCH --mail-user=leslie.juigne@physik.uzh.ch
 #SBATCH --mail-type=BEGIN,FAIL
-#SBATCH --output=/disk/data1/lze/ljuign/run3_g4sim_v11/v11-biasing/slurm_jobs/temp.out
+#SBATCH --output=/disk/data1/lze/ljuign/run5_g4sim_v11/out/slurmjobs/temp.out
 
 # --- Arguments ---
 JOB_TYPE=$1
@@ -18,9 +18,9 @@ BIAS=$4
 
 # --- Determine output directory ---
 if [[ "$JOB_TYPE" == "internals" ]]; then
-    LOG_DIR="/disk/data1/lze/ljuign/run3_g4sim_v11/v11-biasing/internals/out"
+    LOG_DIR="/disk/data1/lze/ljuign/run5_g4sim_v11/out"
 else
-    LOG_DIR="/disk/data1/lze/ljuign/run3_g4sim_v11/v11-biasing/rock/out"
+    LOG_DIR="/disk/data1/lze/ljuign/run5_g4sim_v11/out"
 fi
 mkdir -p "$LOG_DIR"
 

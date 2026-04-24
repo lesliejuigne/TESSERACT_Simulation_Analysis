@@ -13,9 +13,9 @@ ISOTOPE=$8
 BIAS=$9   # on | off
 
 # --- Paths ---
-BASE_DIR="/disk/data1/lze/ljuign/run3_g4sim_v11/v11-biasing"
-BUILD_DIR="$BASE_DIR/TESSERACT-Octagon/build"
-CONTAINER="/home/lze/ljuign/appbuilder/tes-base.sif"
+BASE_DIR="/disk/data1/lze/ljuign/run5_g4sim_v11"
+BUILD_DIR="/disk/data1/lze/ljuign/G4TesseractSim/build"
+CONTAINER="/disk/data1/lze/ljuign/appbuilder/tes-base.sif"
 
 # TESSERACT executable
 TESSERACT_EXE="$BUILD_DIR/TesseractSim"
@@ -32,19 +32,19 @@ if [ "$JOB_TYPE" == "internals" ]; then
 
 elif [ "$JOB_TYPE" == "rock" ]; then
     if [ "$ISOTOPE" == "neutrons" ]; then
-        IN_DIR="$BUILD_DIR/macros/LSMneutron"
+        IN_DIR="$BUILD_DIR/macros/Externals/Rock_Neutrons_LSM"
         OUT_DIR="$BASE_DIR/rock/base"
         MACRO_FILE="$IN_DIR/LSM_Neutron_10M.mac"
         OUTPUT_FILE="$OUT_DIR/Rock_Neutrons_${TASK_ID}_b${BIAS}.root"
     else
-        IN_DIR="$BUILD_DIR/macros/RockGammas"
+        IN_DIR="$BUILD_DIR/macros/Externals/Rock_Gammas_LSM"
         OUT_DIR="$BASE_DIR/rock/base"
         MACRO_FILE="$IN_DIR/Rock_Gamma_${ISOTOPE}_1B.mac"
         OUTPUT_FILE="$OUT_DIR/Rock_Gammas_${ISOTOPE}_${TASK_ID}_b${BIAS}.root"
     fi
 
 elif [ "$JOB_TYPE" == "concrete" ]; then
-    IN_DIR="$BUILD_DIR/macros/ConcreteGammas"
+    IN_DIR="$BUILD_DIR/macros/Externals/Concrete_Gammas_LSM"
     OUT_DIR="$BASE_DIR/concrete/base"
     MACRO_FILE="$IN_DIR/Concrete_Gamma_${ISOTOPE}_1B.mac"
     OUTPUT_FILE="$OUT_DIR/Concrete_Gammas_${ISOTOPE}_${TASK_ID}_b${BIAS}.root"

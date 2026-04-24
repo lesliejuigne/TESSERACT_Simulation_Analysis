@@ -14,7 +14,7 @@ The SimRunner workflow consists of four main scripts and a configuration file:
    - Loops over materials, isotopes, and bias options.
    - Submits SLURM jobs using `python launch_jobs.sh`.
 
-3. **`submit_simulation.sh`**
+3. **`submit_job.sh`**
    - SLURM array job script.
    - Receives arguments from `launch_jobs.py`: `JOB_TYPE`, `MATERIAL`, `ISOTOPE`, `BIAS`.
    - Determines log/output directories based on job type.
