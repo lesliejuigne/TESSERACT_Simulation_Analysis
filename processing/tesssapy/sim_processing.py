@@ -13,7 +13,7 @@ from .get_norm_param import GetNormParam
 
 warnings.simplefilter("ignore")
 
-materials = get_cached_data("materials_data_LUX+cosmo.csv")
+materials = get_cached_data("internals_radiogenic_data.csv")
 rock      = get_cached_data("rock_data.csv")
 
 plt.style.use(load_style_file('SetStyle_mplstyle.txt'))
@@ -109,6 +109,7 @@ class G4SimProcessor:
         if self.compoment == "internals":
             layers = materials["Material"].unique().tolist()
             get_iso_list = lambda l: materials[materials["Material"] == l]["Isotope"].unique().tolist()
+            
         else:
             mat_type = "Rock" if self.compoment == "rock" else "Concrete"
             layers = rock[rock["Material"] == mat_type]["Particule"].unique().tolist()
@@ -131,7 +132,6 @@ class G4SimProcessor:
                 
                 expected_start = f"{prefix}{layer}_{iso}_"
                 pattern = os.path.join(self.folder_path, f"{expected_start}*_{self.bias}_filtered.root")
-                
                 raw_file_list = glob.glob(pattern)
                 file_list = [f for f in raw_file_list if os.path.basename(f).startswith(expected_start)]
                 successful_loads = 0
@@ -141,7 +141,7 @@ class G4SimProcessor:
                         if len(d) == 0: continue 
 
                         d = np.array(d)
-                        mask = d > 0
+                        mask = d > 0.01
                         d_filtered = d[mask]
                         
                         if len(d_filtered) > 0:
@@ -185,7 +185,7 @@ class G4SimProcessor:
         print("Data Loading Complete.")
     
     def process_internals_data(self):
-        
+        print("Processing internal background simulations...")
         """
         Normalizes internal background data using Activity [Bq/kg] and Layer Mass [kg].
         
@@ -201,82 +201,108 @@ class G4SimProcessor:
             'U238': ['Ra226', 'Pb214', 'Bi214', 'Pb210', 'Th234', 'Pa234m'],
             'Th232': ['Th228', 'Ac228', 'Pb212', 'Tl208', 'Ra228', 'Ra224', 'Rn220']
         } 
+        
+        nsims_u238early = {
+            'Cu': 10000000,
+            'PCu': 10000000,
+            'MuMetal':10000000,
+            'Pb': 10000000,
+            'PE': 10000000,
+            'PEext': 100000000,
+            'SSi': 100000000,
+            'Ti': 50000000
+        }
+        
         all_daughters = [item for sublist in decay_chains.values() for item in sublist]
         geo_name_mapping = {'PCu': 'PureCu'}
         win1_min, win1_max = 0, 1 # Narrow window 0-1 keV
 
         for layer in self.data.keys():
-            
             self.raw_norm[layer] = {}
             geo_key = geo_name_mapping.get(layer, layer)
             layer_sum = 0
-            
-            for iso in self.data[layer].keys():
-                # 1. Smart Double Counting Check
-                if iso in all_daughters:
-                    parent = [p for p, daughts in decay_chains.items() if iso in daughts][0]
-                    parent_prefix = f"{layer}_{parent}"
-                    if any(f.startswith(parent_prefix) for f in os.listdir(self.folder_path)):
-                        iso_row = materials[(materials['Material'] == layer) & (materials['Isotope'] == iso)]
-                        parent_row = materials[(materials['Material'] == layer) & (materials['Isotope'] == parent)]
+            try:
+                for iso in self.data[layer].keys():
+                    # 1. Smart Double Counting Check
+                    if iso in all_daughters:
+                        parent = [p for p, daughts in decay_chains.items() if iso in daughts][0]
+                        parent_prefix = f"{layer}_{parent}"
+                        if any(f.startswith(parent_prefix) for f in os.listdir(self.folder_path)):
+                            iso_row = materials[(materials['Material'] == layer) & (materials['Isotope'] == iso)]
+                            parent_row = materials[(materials['Material'] == layer) & (materials['Isotope'] == parent)]
+                            
+                            
+                            if not iso_row.empty and not parent_row.empty:
+                                if iso_row.iloc[0]['Activity'] == parent_row.iloc[0]['Activity']:
+                                    print(f"Skipping {layer}-{iso} due to secular equilibrium with {parent}.")
+                                    continue
+
+                    # 2. Metadata & Scaling
+                    try:
+                        prefix = f"{layer}_{iso}_"
+                        matching_files = [f for f in os.listdir(self.folder_path) if f.startswith(prefix) and f.endswith(".root")]
+                        if not matching_files: 
+                            continue
                         
-                        if not iso_row.empty and not parent_row.empty:
-                            if iso_row.iloc[0]['Activity'] == parent_row.iloc[0]['Activity']:
-                                continue
+                        full_path = os.path.join(self.folder_path, matching_files[0])
+                        macro_info = GetNormParam(full_path, "runMacro")
+                        geo_info = GetNormParam(full_path, "geometryTable")
+                        
+                        n_sim = macro_info.beamon_number
+                        if iso == "U238early" :
+                            n_sim = nsims_u238early.get(layer, n_sim)  # Override with predefined values if available
+                        
+                        if iso == 'U238late' :
+                            n_sim = nsims_u238early.get(layer, n_sim)  # Override with predefined values if available
+                        
+                        n_files = self.data_counts[layer][iso]
+                        mass_layer = geo_info.total_mass[geo_key] 
+                        mass_det = geo_info.total_mass[self.target]
+                        
+                        row = materials[(materials['Material'] == layer) & (materials['Isotope'] == iso)]
+                        if row.empty: continue
+                        
+                        raw_act = row.iloc[0]['Activity']
+                        raw_sigma = row.iloc[0]['Sigma']
+                        
+                        if raw_act > 0:
+                            activity = raw_act
+                            act_err = raw_sigma  
+                        else:
+                            activity = raw_sigma
+                            act_err = 0.0
+                            
+                        # Formula: (Flux * Surface * SecPerDay) / (N_sim * Mass_Detector * Energy_Width)
+                        dru_factor = (activity * mass_layer * self.SecPerDay * self.Bin) / (n_sim * n_files * mass_det)
+                        
+                        energies = self.data[layer][iso]
+                        stat_err = np.sqrt(len(energies)) * dru_factor
+                        sys_err = dru_factor * (act_err / activity if activity > 0 else 0)
+                        
+                        dru_win1 = np.sum((energies >= win1_min) & (energies < win1_max)) * dru_factor
+                        n_win1 = np.sum((energies >= win1_min) & (energies < win1_max))
+                        
+                        dru_win1_stat_err = np.sqrt(n_win1) * dru_factor if n_win1 > 0 else 0
+                        
+                        layer_sum += dru_win1
+                        
+                        
+                        self.raw_norm[layer][iso] = {'energy': energies, 
+                                                    'stat_err': stat_err,
+                                                    'sys_err': sys_err,
+                                                    'weight': dru_factor, 
+                                                    'dru_0_1': dru_win1,
+                                                    'dru_0_1_stat_err': dru_win1_stat_err
+                                                    }
+                    except Exception as e:
+                        print(f"Error processing {layer}-{iso}: {e}")
+                        continue
 
-                # 2. Metadata & Scaling
-                try:
-                    prefix = f"{layer}_{iso}"
-                    matching_files = [f for f in os.listdir(self.folder_path) if f.startswith(prefix) and f.endswith(".root")]
-                    if not matching_files: continue
-                    
-                    full_path = os.path.join(self.folder_path, matching_files[0])
-                    macro_info = GetNormParam(full_path, "runMacro")
-                    geo_info = GetNormParam(full_path, "geometryTable")
-                    
-                    n_sim = macro_info.beamon_number
-                    n_files = self.data_counts[layer][iso]
-                    mass_layer = geo_info.total_mass[geo_key] 
-                    mass_det = geo_info.total_mass[self.target]
-                    
-                    row = materials[(materials['Material'] == layer) & (materials['Isotope'] == iso)]
-                    if row.empty: continue
-                    
-                    raw_act = row.iloc[0]['Activity']
-                    raw_sigma = row.iloc[0]['Sigma']
-                    
-                    if raw_act > 0:
-                        activity = raw_act
-                        act_err = raw_sigma  
-                    else:
-                        activity = raw_sigma
-                        act_err = 0.0
-                    # Formula: (Flux * Surface * SecPerDay) / (N_sim * Mass_Detector * Energy_Width)
-                    dru_factor = (activity * mass_layer * self.SecPerDay * self.Bin) / (n_sim * n_files * mass_det)
-                    
-                    energies = self.data[layer][iso]
-                    stat_err = np.sqrt(len(energies)) * dru_factor
-                    sys_err = dru_factor * (act_err / activity if activity > 0 else 0)
-                    
-                    dru_win1 = np.sum((energies >= win1_min) & (energies < win1_max)) * dru_factor
-                    n_win1 = np.sum((energies >= win1_min) & (energies < win1_max))
-                    
-                    dru_win1_stat_err = np.sqrt(n_win1) * dru_factor if n_win1 > 0 else 0
-                    
-                    layer_sum += dru_win1
-                    
-                    self.raw_norm[layer][iso] = {'energy': energies, 
-                                                'stat_err': stat_err,
-                                                'sys_err': sys_err,
-                                                'weight': dru_factor, 
-                                                'dru_0_1': dru_win1,
-                                                'dru_0_1_stat_err': dru_win1_stat_err
-                                                 }
-
-                except Exception:
-                    continue
-
-            self.summary_data.append({'Layer': layer, 'DRU_0-1_keV': layer_sum, 'Stat_err': dru_win1_stat_err, 'Sys_err': sys_err})
+                self.summary_data.append({'Layer': layer, 'DRU_0-1_keV': layer_sum, 'Stat_err': dru_win1_stat_err, 'Sys_err': sys_err})
+            
+            except Exception as e:
+                print(f"Error processing layer {layer}: {e}")
+                continue
 
     def process_externals_data(self):
         """
@@ -325,7 +351,7 @@ class G4SimProcessor:
                         energies = self.data[layer][iso]['energy']
                         weights = self.data[layer][iso]['weight']
                         
-                        mask = (energies >= win1_min) & (energies < win1_max)
+                        mask = (energies >= win1_min) & (energies <= win1_max)
 
                         # Weighted normalization
                         dru_win1 = np.sum(weights[mask]) * dru_factor
