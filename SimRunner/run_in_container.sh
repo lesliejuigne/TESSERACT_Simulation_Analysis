@@ -13,7 +13,7 @@ ISOTOPE=$8
 BIAS=$9   # on | off
 
 # --- Paths ---
-BASE_DIR="/disk/data1/lze/ljuign/run3_g4sim_v11/v11-biasing"
+BASE_DIR="/disk/data1/lze/ljuign/run8_g4sim_v11/v11-biasing"
 BUILD_DIR="$BASE_DIR/TESSERACT-Octagon/build"
 CONTAINER="/home/lze/ljuign/appbuilder/tes-base.sif"
 
