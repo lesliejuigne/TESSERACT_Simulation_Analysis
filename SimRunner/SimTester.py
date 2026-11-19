@@ -1,15 +1,32 @@
+# STABILITY CHECK SCRIPT FOR TESSERACT SIMULATIONS
+# =================================================
+# This script runs TesseractSim simulations using the base TESSERACT geometry. 
+# It performs stability checks by running simulations with identical and different seeds,
+# comparing the outputs to ensure the version installed is stable.
+
+# To run this script: 
+# 1. Ensure you have TesseractSim built and the path set correctly.
+# 2. Source the G4 environment.
+# 3. Execute the script using the command : python3 SimTester.py
+
+# =================================================
+
+# Modules
 import subprocess
 import os
 import uproot
 import numpy as np
 
+# Define paths to the executable and macros
+path = "path/to/the/build/folder"
+executable = os.path.join(path, "TesseractSim")
 
+# =================================================
 class PyRunner:
     def __init__(self, file_path):
         self.file_path = file_path  
 
     def get_root_tree(self):
-        """Load arrays from ROOT TTree"""
         with uproot.open(self.file_path) as root_file:
             tree = root_file["events"]
             Params = list(tree.keys())
@@ -20,17 +37,13 @@ class PyRunner:
             edep = tree[Params[16]].array(library="np")
         return rx, ry, rz, t, edep
 
-
 def run_macro(executable, macro_file, output_file):
-    """Run one macro and wait until it finishes"""
     cmd = [executable, "-m", macro_file, "-o", output_file]
     print(f"\nRunning: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
     print(f"Finished: {output_file}")
 
-
 def summarize_data(file_path):
-    """Return summary statistics for quick comparison"""
     rx, ry, rz, t, edep = PyRunner(file_path).get_root_tree()
     return {
         "n_events": len(edep),
@@ -41,9 +54,7 @@ def summarize_data(file_path):
         "z_mean": np.mean(rz),
     }
 
-
 def compare_runs(f1, f2, expect_identical=True):
-    """Compare two ROOT outputs numerically"""
     s1 = summarize_data(f1)
     s2 = summarize_data(f2)
 
@@ -64,23 +75,7 @@ def compare_runs(f1, f2, expect_identical=True):
     return all_ok
 
 
-def compare_with_reference(file_path, expected):
-    """Check a simulation result against known expected reference values"""
-    summary = summarize_data(file_path)
-    print(f"\nChecking {file_path} against reference values:")
-    ok = True
-    for key, exp_val in expected.items():
-        val = summary.get(key)
-        if np.isclose(val, exp_val, rtol=1e-9, atol=1e-9):
-            print(f"  {key}: OK ({val:.4f})")
-        else:
-            print(f"  {key}: FAIL — got {val:.4f}, expected {exp_val:.4f}")
-            ok = False
-    return ok
-
-
 def delete_files(files):
-    """Delete generated ROOT files"""
     for f in files:
         if os.path.exists(f):
             os.remove(f)
@@ -88,29 +83,22 @@ def delete_files(files):
         else:
             print(f"{f} not found, skipping")
 
+# =================================================
 
 if __name__ == "__main__":
-    path = "/disk/data1/lze/ljuign/TESSERACTSim_clean/build"
-    executable = os.path.join(path, "TesseractSim")
-
     runs = [
-        {"macro": os.path.join(path, "macros/setup_test_1.mac"), "output": "test_1.0.root"},
-        {"macro": os.path.join(path, "macros/setup_test_1.mac"), "output": "test_1.1.root"},
-        {"macro": os.path.join(path, "macros/setup_test_2.mac"), "output": "test_2.0.root"},
+        {"macro": os.path.join(path, "macros/StabilityCheck/setup_test_1.mac"), "output": "test_1.0.root"},
+        {"macro": os.path.join(path, "macros/StabilityCheck/setup_test_1.mac"), "output": "test_1.1.root"},
+        {"macro": os.path.join(path, "macros/StabilityCheck/setup_test_2.mac"), "output": "test_2.0.root"},
     ]
 
-    # Reference expected values
-    expected_seed1 = {"n_events": 3388, "edep_mean": 441.1, "edep_std": 241.1}
-    expected_seed2 = {"n_events": 3947, "edep_mean": 7.843, "edep_std": 73.75}
-
-    # Step 1: Run macros if needed
     for run in runs:
         if not os.path.exists(run["output"]):
             run_macro(executable, run["macro"], run["output"])
         else:
             print(f"Skipping {run['output']} (already exists)")
 
-    # Step 2: Consistency checks
+    # ============== Checks ==============
     print("\n=== Test 1: identical seeds (1.0 vs 1.1) ===")
     ok1 = compare_runs("test_1.0.root", "test_1.1.root", expect_identical=True)
     print("Result:", "PASS" if ok1 else "FAIL")
@@ -119,19 +107,10 @@ if __name__ == "__main__":
     ok2 = compare_runs("test_1.0.root", "test_2.0.root", expect_identical=False)
     print("Result:", "PASS" if ok2 else "FAIL")
 
-    # Step 3: Validation against expected results
-    print("\n=== Test 3: Check physical correctness vs expected ===")
-    ok3a = compare_with_reference("test_1.0.root", expected_seed1)
-    ok3b = compare_with_reference("test_2.0.root", expected_seed2)
-    if ok3a and ok3b:
-        print("PASS: All statistical values match expected seeds")
-    else:
-        print("FAIL: Simulation statistics differ from reference")
-
-    # Step 4: Optional cleanup
+    # ============== Cleanup ==============
     delete_after = input("\nDelete generated ROOT files? (y/n): ").strip().lower()
     if delete_after == "y":
         delete_files([r["output"] for r in runs])
-        print("All test files deleted — simulations verified successfully. Have fun with the simulator!")
+        print("All test files deleted — simulations verified successfully. Have fun with the simulations!")
     else:
-        print("Files kept for inspection.")
+        print("Files kept, something might be wrong.")

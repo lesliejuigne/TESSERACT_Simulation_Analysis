@@ -44,7 +44,6 @@ class GetNormParam:
         if self.objname not in f:
             raise KeyError(f"'{self.objname}' not found in file. Run f.classnames() to locate it.")
         obj = f[self.objname]
-
         if "fLines" not in obj.all_members:
             raise KeyError("object has no member 'fLines' — not a TMacro-like object?")
         lines_list = obj.member("fLines")
@@ -58,7 +57,6 @@ class GetNormParam:
                 s = str(item)
             if s is not None:
                 lines.append(s.rstrip("\n"))
-
         rows = [ln.strip().split() for ln in lines if ln.strip()]
         df = pd.DataFrame(rows)
         
