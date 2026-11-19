@@ -1,8 +1,8 @@
 Material,Particule,Isotope,Surface,Count,Flux,Sigma,
-Rock,Gammas,K40,3.2e5,1e9,0.0722,3.61e-3
-Rock,Gammas,Th232,3.2e5,1e9,0.661,3.31e-2
-Rock,Gammas,U238,3.2e5,1e9,1.166,5.83e-2
-Rock,Neutrons,Tot,3.2e5,1e9,1.1e-6,0.4e-6
-Concrete,Gammas,K40,3.2e5,1e9,0.0722,3.61e-3
-Concrete,Gammas,Th232,3.2e5,1e9,0.661,3.31e-2
-Concrete,Gammas,U238,3.2e5,1e9,1.166,5.83e-2
+Rock,Gammas,K40,3.2e5,1e8,0.035,3.61e-4
+Rock,Gammas,Th232,3.2e5,1e8,0.30,3.31e-3
+Rock,Gammas,U238,3.2e5,1e8,0.28,5.83e-3
+Rock,Neutrons,Tot,3.2e5,1e8,1.1e-6,0.4e-6
+Concrete,Gammas,K40,3.2e5,1e8,0.035,3.61e-4
+Concrete,Gammas,Th232,3.2e5,1e8,0.30,3.31e-3
+Concrete,Gammas,U238,3.2e5,1e8,0.28,5.83e-3
